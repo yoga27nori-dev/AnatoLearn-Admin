@@ -1,8 +1,10 @@
 name: Process AnatoLearn scheduled work
 
+# Schedule disabled — re-enable once ANATOLEARN_APP_URL and ANATOLEARN_CRON_SECRET
+# secrets are configured in the repository settings.
 on:
-  schedule:
-    - cron: "*/10 * * * *"
+  # schedule:
+  #   - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:
