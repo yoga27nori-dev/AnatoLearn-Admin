@@ -13,17 +13,21 @@ type StudyCatalogInput = { page: number; pageSize: number; q?: string };
 type MutationContext = { actorId: string; requestId: string; userAgent?: string | null };
 const json = (value: unknown) => JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 const lessonRouteInclude = {
-  topic: { select: { slug: true, organSystem: { select: { slug: true } } } },
+  topic: { select: { title: true, slug: true, organSystem: { select: { slug: true } } } },
 } satisfies Prisma.ContentLessonInclude;
 type LessonWithRoute = Prisma.ContentLessonGetPayload<{ include: typeof lessonRouteInclude }>;
 
 function lessonWithRouteDto(row: LessonWithRoute) {
   return {
     ...lessonDto(row, true),
+    topicTitle: row.topic.title,
     topicSlug: row.topic.slug,
     organSystemSlug: row.topic.organSystem.slug,
   };
 }
+type TopicListItem = ReturnType<typeof topicDto> & { organSystemName: string; organSystemSlug: string };
+type LessonWithRouteDto = ReturnType<typeof lessonWithRouteDto>;
+type ListPage<T> = { items: T[]; pagination: { page: number; pageSize: number; total: number; totalPages: number } };
 
 function lessonImageIds(value: unknown) {
   return lessonMediaIds(value);
@@ -84,6 +88,10 @@ async function uniqueOrganSystemSlug(tx: Prisma.TransactionClient, name: string,
   }
 }
 
+export function listAdmin(resource: "organSystem", input: ListInput): Promise<ListPage<ReturnType<typeof organSystemDto>>>;
+export function listAdmin(resource: "topic", input: ListInput): Promise<ListPage<TopicListItem>>;
+export function listAdmin(resource: "contentLesson", input: ListInput): Promise<ListPage<LessonWithRouteDto>>;
+export function listAdmin(resource: Resource, input: ListInput): Promise<ListPage<ReturnType<typeof organSystemDto> | TopicListItem | LessonWithRouteDto>>;
 export async function listAdmin(resource: Resource, input: ListInput) {
   const skip = (input.page - 1) * input.pageSize;
   if (resource === "organSystem") {
@@ -96,7 +104,7 @@ export async function listAdmin(resource: Resource, input: ListInput) {
   if (resource === "topic") {
     const sortBy = input.sortBy === "name" ? "title" : input.sortBy === "title" || input.sortBy === "createdAt" || input.sortBy === "updatedAt" ? input.sortBy : "displayOrder";
     const orderBy: Prisma.TopicOrderByWithRelationInput[] = [{ [sortBy]: input.sortOrder }, { id: input.sortOrder }];
-    const where: Prisma.TopicWhereInput = { trashedAt: null, organSystem: { trashedAt: null }, status: input.status, organSystemId: input.organSystemId, ...(input.q ? { OR: [{ title: { contains: input.q, mode: "insensitive" } }, { summary: { contains: input.q, mode: "insensitive" } }] } : {}) };
+    const where: Prisma.TopicWhereInput = { trashedAt: null, organSystem: { trashedAt: null }, status: input.status, organSystemId: input.organSystemId, ...(input.q ? { OR: [{ title: { contains: input.q, mode: "insensitive" } }, { summary: { contains: input.q, mode: "insensitive" } }, { organSystem: { name: { contains: input.q, mode: "insensitive" } } }] } : {}) };
     const [rows, total] = await prisma.$transaction([prisma.topic.findMany({ where, skip, take: input.pageSize, orderBy, include: { organSystem: { select: { name: true, slug: true } } } }), prisma.topic.count({ where })]);
     return { items: rows.map((row) => ({ ...topicDto(row, true), organSystemName: row.organSystem.name, organSystemSlug: row.organSystem.slug })), pagination: pagination(total, input) };
   }
@@ -107,6 +115,10 @@ export async function listAdmin(resource: Resource, input: ListInput) {
   return { items: rows.map(lessonWithRouteDto), pagination: pagination(total, input) };
 }
 
+export function getAdmin(resource: "organSystem", id: string): Promise<ReturnType<typeof organSystemDto>>;
+export function getAdmin(resource: "topic", id: string): Promise<ReturnType<typeof topicDto>>;
+export function getAdmin(resource: "contentLesson", id: string): Promise<ReturnType<typeof lessonDto>>;
+export function getAdmin(resource: Resource, id: string): Promise<ReturnType<typeof organSystemDto> | ReturnType<typeof topicDto> | ReturnType<typeof lessonDto>>;
 export async function getAdmin(resource: Resource, id: string) {
   const row = resource === "organSystem" ? await prisma.organSystem.findFirst({ where: { id, trashedAt: null } }) : resource === "topic" ? await prisma.topic.findFirst({ where: { id, trashedAt: null, organSystem: { trashedAt: null } } }) : await prisma.contentLesson.findFirst({ where: { id, trashedAt: null, topic: { trashedAt: null, organSystem: { trashedAt: null } } } });
   if (!row) throw new ContentError("NOT_FOUND", "Content was not found.", 404);

@@ -4,7 +4,7 @@
 
 **Phase 7: Hardening and delivery — repository implementation complete; external gates open**
 
-Date: 2026-08-05
+Date: 2026-08-19
 
 Phases 0-7 are implemented and all sixteen migrations are current in the configured
 development database. The product is not claimed as fully deployed or production-ready.
@@ -12,6 +12,19 @@ development database. The product is not claimed as fully deployed or production
 resource; the adapter accepts its standard `KV_REST_API_*` credentials as well as the
 self-managed `UPSTASH_REDIS_REST_*` pair. Provider, authenticated E2E, backup/restore,
 cron, and production deployment acceptance remain external gates.
+
+## Admin topic selection scalability fix (2026-08-19)
+
+- Replaced fixed first-100-topic native selects with an authenticated, server-paged topic
+  picker for lesson, flashcard, and question create/edit forms and their admin list
+  filters. This removes the alphabetical truncation that hid late titles such as Vas
+  Deferens and Vasectomy.
+- Picker search covers topic title, summary, and organ-system name, uses deterministic
+  A-Z ordering with twelve-result pages, preserves saved selections outside the active
+  page, and lets list users clear an optional topic filter.
+- Scoped organ-system topic lists now use validated search, status filters, curriculum-
+  order sorting, and fifteen-result pagination instead of a separate first-100 query.
+- No migration, public API contract, or production data change is required.
 
 ## Content Review publication incident (2026-08-05)
 

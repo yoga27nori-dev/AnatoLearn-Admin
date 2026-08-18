@@ -14,6 +14,7 @@ import {
   richTextDraftDocumentSchema,
   richTextDocumentSchema,
   studyCatalogQuerySchema,
+  topicPickerQuerySchema,
 } from "./schemas";
 
 describe("content administration schemas", () => {
@@ -274,5 +275,10 @@ describe("content administration schemas", () => {
     expect(listQuerySchema.safeParse({ page: "1", pageSize: "101" }).success).toBe(false);
     const id = crypto.randomUUID();
     expect(reorderSchema.safeParse({ parentId: crypto.randomUUID(), ids: [id, id] }).success).toBe(false);
+  });
+
+  it("normalizes a bounded topic-picker request", () => {
+    expect(topicPickerQuerySchema.parse({ page: 2, search: " vas deferens " })).toEqual({ page: 2, search: "vas deferens" });
+    expect(topicPickerQuerySchema.safeParse({ page: 0, search: "x".repeat(201) }).success).toBe(false);
   });
 });

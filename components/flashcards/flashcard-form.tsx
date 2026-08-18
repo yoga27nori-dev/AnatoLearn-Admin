@@ -6,9 +6,11 @@ import type { FormAction } from "@/components/phase3/action-form";
 import { ActionForm } from "@/components/phase3/action-form";
 import { fieldClass, labelClass, panelClass, StatusBadge } from "@/components/phase3/admin-ui";
 import { DirectImageInput } from "@/components/media/direct-image-input";
+import { TopicPicker } from "@/components/shared/topic-picker";
 
 type Flashcard = {
   topicId: string;
+  topicTitle?: string | null;
   frontText: string;
   backText: string;
   frontMediaId: string | null;
@@ -18,7 +20,7 @@ type Flashcard = {
   displayOrder: number;
 };
 
-export function FlashcardForm({ action, item, publicationActions, publicationStatus, topics }: { action: FormAction; item?: Flashcard; publicationActions?: ReactNode; publicationStatus?: string; topics: Array<{ id: string; label: string }> }) {
+export function FlashcardForm({ action, item, publicationActions, publicationStatus }: { action: FormAction; item?: Flashcard; publicationActions?: ReactNode; publicationStatus?: string }) {
   const [front, setFront] = useState(item?.frontText ?? "");
   const [back, setBack] = useState(item?.backText ?? "");
 
@@ -26,7 +28,7 @@ export function FlashcardForm({ action, item, publicationActions, publicationSta
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(300px,.65fr)]">
       <div className={panelClass}>
         <ActionForm action={action} guardUnsavedChanges="flashcard" label={item ? "Save flashcard" : "Create flashcard"}>
-          <label className={labelClass}>Topic<select className={fieldClass} defaultValue={item?.topicId ?? ""} name="topicId" required><option value="">Select a topic</option>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}</select></label>
+          <TopicPicker initialLabel={item?.topicTitle} label="Topic" name="topicId" value={item?.topicId} />
           <div className="grid gap-5 md:grid-cols-2">
             <label className={labelClass}>Front text<textarea className={`${fieldClass} min-h-44 py-3`} name="frontText" onChange={(event) => setFront(event.target.value)} required value={front} /></label>
             <label className={labelClass}>Back text<textarea className={`${fieldClass} min-h-44 py-3`} name="backText" onChange={(event) => setBack(event.target.value)} required value={back} /></label>

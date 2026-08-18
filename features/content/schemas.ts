@@ -334,6 +334,12 @@ export const listQuerySchema = z.object({
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 }).strict();
 
+export const topicPickerQuerySchema = z.object({
+  page: z.number().int().min(1).default(1),
+  search: z.string().trim().max(200).default(""),
+  selectedId: uuid.optional(),
+}).strict();
+
 export const studyCatalogQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

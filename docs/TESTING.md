@@ -82,6 +82,10 @@ Install Chromium once with `npx playwright install chromium`.
 - parent-list create redirects for systems, global/scoped topics, lessons, flashcards, and
   quiz/test questions; scoped topic creation overrides submitted parents and compensates
   uploads when the server-resolved parent is unavailable
+- authenticated topic-picker paging/search, selection hydration, filter clearing, and
+  title/summary/organ-system search coverage so late-alphabet topics remain selectable
+- scoped organ-system topic search, status filtering, and second-page pagination without
+  a first-100 truncation
 
 ### Media and audit
 

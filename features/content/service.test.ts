@@ -184,6 +184,26 @@ describe("canonical admin topic lookup", () => {
       include: { organSystem: { select: { name: true, slug: true } } },
     }));
   });
+
+  it("searches topic titles, summaries, and parent organ-system names", async () => {
+    mocks.transaction.mockResolvedValue([[], 0]);
+
+    await listAdmin("topic", { page: 1, pageSize: 12, q: "reproductive", sortBy: "title", sortOrder: "asc" });
+
+    expect(mocks.topicListFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        trashedAt: null,
+        organSystem: { trashedAt: null },
+        status: undefined,
+        organSystemId: undefined,
+        OR: [
+          { title: { contains: "reproductive", mode: "insensitive" } },
+          { summary: { contains: "reproductive", mode: "insensitive" } },
+          { organSystem: { name: { contains: "reproductive", mode: "insensitive" } } },
+        ],
+      },
+    }));
+  });
 });
 
 describe("canonical admin lesson lookup", () => {
@@ -199,7 +219,7 @@ describe("canonical admin lesson lookup", () => {
     status: "DRAFT" as const,
     createdAt: new Date(),
     updatedAt: new Date(),
-    topic: { slug: "heart-anatomy", organSystem: { slug: "circulatory" } },
+    topic: { title: "Heart anatomy", slug: "heart-anatomy", organSystem: { slug: "circulatory" } },
   };
 
   beforeEach(() => vi.clearAllMocks());
@@ -209,6 +229,7 @@ describe("canonical admin lesson lookup", () => {
 
     await expect(getAdminLessonBySlugs("circulatory", "heart-anatomy", "overview")).resolves.toMatchObject({
       id: first,
+      topicTitle: "Heart anatomy",
       organSystemSlug: "circulatory",
       topicSlug: "heart-anatomy",
       slug: "overview",
@@ -223,7 +244,7 @@ describe("canonical admin lesson lookup", () => {
           organSystem: { slug: "circulatory", trashedAt: null },
         },
       },
-      include: { topic: { select: { slug: true, organSystem: { select: { slug: true } } } } },
+      include: { topic: { select: { title: true, slug: true, organSystem: { select: { slug: true } } } } },
     });
   });
 
@@ -238,7 +259,7 @@ describe("canonical admin lesson lookup", () => {
     });
     expect(mocks.adminLessonFindFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: first, trashedAt: null, topic: { trashedAt: null, organSystem: { trashedAt: null } } },
-      include: { topic: { select: { slug: true, organSystem: { select: { slug: true } } } } },
+      include: { topic: { select: { title: true, slug: true, organSystem: { select: { slug: true } } } } },
     }));
   });
 
@@ -246,10 +267,10 @@ describe("canonical admin lesson lookup", () => {
     mocks.transaction.mockResolvedValue([[lesson], 1]);
 
     await expect(listAdmin("contentLesson", { page: 1, pageSize: 20, sortBy: "displayOrder", sortOrder: "asc" })).resolves.toMatchObject({
-      items: [{ id: first, organSystemSlug: "circulatory", topicSlug: "heart-anatomy" }],
+      items: [{ id: first, topicTitle: "Heart anatomy", organSystemSlug: "circulatory", topicSlug: "heart-anatomy" }],
     });
     expect(mocks.lessonListFindMany).toHaveBeenCalledWith(expect.objectContaining({
-      include: { topic: { select: { slug: true, organSystem: { select: { slug: true } } } } },
+      include: { topic: { select: { title: true, slug: true, organSystem: { select: { slug: true } } } } },
     }));
     expect(mocks.adminTopicFindFirst).not.toHaveBeenCalled();
   });

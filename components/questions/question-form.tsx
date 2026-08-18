@@ -8,12 +8,14 @@ import { ActionForm } from "@/components/phase3/action-form";
 import { fieldClass, labelClass, panelClass, StatusBadge } from "@/components/phase3/admin-ui";
 import { cn } from "@/lib/utils";
 import { DirectImageInput } from "@/components/media/direct-image-input";
+import { TopicPicker } from "@/components/shared/topic-picker";
 
 type AssessmentType = "QUIZ" | "TEST";
 type Option = { id?: string; editorId?: string; optionText: string; mediaId?: string | null; isCorrect: boolean };
 type ExistingMedia = Record<string, { signedUrl: string; altText: string }>;
 type Question = {
   topicId: string;
+  topicTitle?: string | null;
   questionText: string;
   mediaId: string | null;
   explanation: string;
@@ -24,7 +26,7 @@ type Question = {
 
 const emptyOptions = (): Option[] => Array.from({ length: 4 }, (_, index) => ({ editorId: `new-option-${index + 1}`, optionText: "", mediaId: null, isCorrect: index === 0 }));
 
-export function QuestionForm({ action, assessmentType, existingMedia = {}, item, publicationActions, publicationStatus, activityStatus, topics }: { action: FormAction; assessmentType: AssessmentType; existingMedia?: ExistingMedia; item?: Question; publicationActions?: ReactNode; publicationStatus?: string; activityStatus?: string; topics: Array<{ id: string; label: string }> }) {
+export function QuestionForm({ action, assessmentType, existingMedia = {}, item, publicationActions, publicationStatus, activityStatus }: { action: FormAction; assessmentType: AssessmentType; existingMedia?: ExistingMedia; item?: Question; publicationActions?: ReactNode; publicationStatus?: string; activityStatus?: string }) {
   const [questionText, setQuestionText] = useState(item?.questionText ?? "");
   const [explanation, setExplanation] = useState(item?.explanation ?? "");
   const [options, setOptions] = useState<Option[]>(() => item?.options.map((option, index) => ({ ...option, editorId: option.id ?? `existing-option-${index + 1}` })) ?? emptyOptions());
@@ -43,7 +45,7 @@ export function QuestionForm({ action, assessmentType, existingMedia = {}, item,
           <aside aria-label="Question metadata" className={cn(panelClass, "order-1 h-fit xl:sticky xl:top-24 xl:order-2", accentBorder)}>
             <h2 className="text-base font-bold text-foreground">Metadata</h2>
             <div className="mt-4 grid gap-4">
-              <label className={labelClass}>Topic<select className={fieldClass} defaultValue={item?.topicId ?? ""} name="topicId" required><option value="">Select a topic</option>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}</select></label>
+              <TopicPicker initialLabel={item?.topicTitle} label="Topic" name="topicId" value={item?.topicId} />
               <label className={labelClass}>Concept tag <span className="font-normal text-muted">Optional</span><input className={fieldClass} defaultValue={item?.conceptTag ?? ""} name="conceptTag" /></label>
               <label className={`${labelClass} self-start`}>Difficulty<select className={`${fieldClass} max-w-40`} defaultValue={item?.difficulty ?? "MEDIUM"} name="difficulty"><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select></label>
             </div>

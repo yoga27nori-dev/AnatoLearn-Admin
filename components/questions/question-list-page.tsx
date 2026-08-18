@@ -4,9 +4,9 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { QuestionList } from "@/components/questions/question-list";
 import { FilterBar, fieldClass } from "@/components/phase3/admin-ui";
-import { listAdmin } from "@/components/phase3/data";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
+import { TopicPicker } from "@/components/shared/topic-picker";
 import { buttonVariants } from "@/components/ui/button";
 import { listQuestions } from "@/features/questions/service";
 import { questionListSchema } from "@/features/questions/schemas";
@@ -25,10 +25,7 @@ export async function QuestionListPage({ assessmentType, searchParams }: { asses
     isActive: scalar(params.isActive), conceptTag: scalar(params.conceptTag), sortBy: "updatedAt", sortOrder: "desc",
   });
   const input = parsed.success ? parsed.data : questionListSchema.parse({ pageSize: 15, assessmentType, sortBy: "updatedAt", sortOrder: "desc" });
-  const [result, topics] = await Promise.all([
-    listQuestions(input),
-    listAdmin("topic", { page: 1, pageSize: 100, sortBy: "title", sortOrder: "asc" }),
-  ]);
+  const result = await listQuestions(input);
   const quiz = assessmentType === "QUIZ";
   const base = `/questions/${assessmentType.toLowerCase()}`;
 
@@ -41,7 +38,7 @@ export async function QuestionListPage({ assessmentType, searchParams }: { asses
     />
     <div className={cn("mb-5 rounded-r-xl border-l-4 p-3 text-sm font-medium", quiz ? "border-quiz bg-quiz-soft text-quiz" : "border-test bg-test-soft text-test")}>{quiz ? "Quiz" : "Test"} identity is shown with both text and color throughout this workspace.</div>
     <FilterBar defaultValue={input.q} placeholder={`Search ${quiz ? "quiz" : "test"} questions`}>
-      <select aria-label="Topic" className={fieldClass} defaultValue={input.topicId ?? ""} name="topicId"><option value="">All topics</option>{topics.items.map((topic) => <option key={topic.id} value={topic.id}>{topic.title}</option>)}</select>
+      <TopicPicker label="Topic" name="topicId" required={false} value={input.topicId} />
       <select aria-label="Status" className={fieldClass} defaultValue={input.status ?? ""} name="status"><option value="">All statuses</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></select>
       <select aria-label="Difficulty" className={fieldClass} defaultValue={input.difficulty ?? ""} name="difficulty"><option value="">All difficulties</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option></select>
       <select aria-label="Activity" className={fieldClass} defaultValue={input.isActive === undefined ? "" : String(input.isActive)} name="isActive"><option value="">Any activity</option><option value="true">Active</option><option value="false">Inactive</option></select>

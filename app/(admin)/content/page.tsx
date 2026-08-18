@@ -4,10 +4,11 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { AdminMediaThumbnail } from "@/components/media/admin-media-thumbnail";
-import { FilterBar, ResourceCard, ResourceCards, StatusBadge, fieldClass } from "@/components/phase3/admin-ui";
+import { FilterBar, ResourceCard, ResourceCards, StatusBadge } from "@/components/phase3/admin-ui";
 import { listAdmin } from "@/components/phase3/data";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Pagination } from "@/components/shared/pagination";
+import { TopicPicker } from "@/components/shared/topic-picker";
 import { buttonVariants } from "@/components/ui/button";
 import { listQuerySchema } from "@/features/content/schemas";
 import { getAdminMediaMap } from "@/features/media/service";
@@ -16,7 +17,6 @@ export const metadata: Metadata = { title: "Content review" };
 
 export default async function ContentPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams;
-  const topics = await listAdmin("topic", { page: 1, pageSize: 100, sortBy: "title", sortOrder: "asc" });
   const parsed = listQuerySchema.safeParse({ page: params.page, pageSize: 15, q: params.q || undefined, status: params.status || undefined, topicId: params.topicId || undefined, sortBy: "updatedAt", sortOrder: "desc" });
   const input = parsed.success ? parsed.data : listQuerySchema.parse({ pageSize: 15, sortBy: "updatedAt", sortOrder: "desc" });
   const result = await listAdmin("contentLesson", input);
@@ -26,10 +26,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
   return <>
     <PageHeader action={<Link className={buttonVariants()} href="/content/new"><Plus className="size-4" />Create lesson</Link>} description="Draft, review, publish, and archive structured anatomy lessons." eyebrow="Learning content" title="Content review" />
     <FilterBar defaultValue={input.q}>
-      <select aria-label="Topic" className={fieldClass} defaultValue={input.topicId ?? ""} name="topicId">
-        <option value="">All topics</option>
-        {topics.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}
-      </select>
+      <TopicPicker label="Topic" name="topicId" required={false} value={input.topicId} />
     </FilterBar>
     {result.items.length ? <>
       <ResourceCards>

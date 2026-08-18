@@ -7,7 +7,7 @@ type Pagination = { page: number; pageSize: number; total: number; totalPages: n
 export type AdminSystem = { id: string; name: string; slug: string; shortDescription: string; longDescription: string | null; coverImageUrl: string | null; iconImageUrl: string | null; coverMediaId: string | null; iconMediaId: string | null; displayOrder: number; isActive: boolean; status: PublishStatus; createdAt: Date; updatedAt: Date };
 export type AdminTopic = { id: string; organSystemId: string; organSystemName?: string; organSystemSlug?: string; title: string; slug: string; summary: string | null; coverImageUrl: string | null; coverMediaId: string | null; displayOrder: number; status: PublishStatus; createdAt: Date; updatedAt: Date };
 export type AdminTopicListItem = AdminTopic & { organSystemName: string; organSystemSlug: string };
-export type AdminLesson = { id: string; topicId: string; title: string; slug: string; summary: string | null; contentBlocks: ContentBlock[]; estimatedReadingMinutes: number; displayOrder: number; status: PublishStatus; createdAt: Date; updatedAt: Date };
+export type AdminLesson = { id: string; topicId: string; topicTitle?: string; title: string; slug: string; summary: string | null; contentBlocks: ContentBlock[]; estimatedReadingMinutes: number; displayOrder: number; status: PublishStatus; createdAt: Date; updatedAt: Date };
 export type AdminLessonWithRoute = AdminLesson & { organSystemSlug: string; topicSlug: string };
 type Input = Parameters<typeof listContent>[1];
 

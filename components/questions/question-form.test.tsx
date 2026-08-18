@@ -7,7 +7,7 @@ import { QuestionForm } from "./question-form";
 
 test("question editor starts with four options and enforces the 2-6 option controls", async () => {
   const user = userEvent.setup();
-  const { container } = render(<QuestionForm action={vi.fn()} assessmentType="QUIZ" topics={[{ id: "topic-id", label: "Heart" }]} />);
+  const { container } = render(<QuestionForm action={vi.fn()} assessmentType="QUIZ" />);
 
   expect(screen.getAllByRole("textbox", { name: /option [A-D]/i })).toHaveLength(4);
   expect(container.querySelector('input[type="file"][name="optionFile.0"]')).toBeInTheDocument();
@@ -27,7 +27,7 @@ test("question editor starts with four options and enforces the 2-6 option contr
 
 test("question preview reflects the prompt, options, and selected correct answer", async () => {
   const user = userEvent.setup();
-  render(<QuestionForm action={vi.fn()} assessmentType="TEST" topics={[{ id: "topic-id", label: "Heart" }]} />);
+  render(<QuestionForm action={vi.fn()} assessmentType="TEST" />);
 
   await user.type(screen.getByRole("textbox", { name: "Question text" }), "Which chamber pumps systemic blood?");
   await user.type(screen.getByRole("textbox", { name: "Option A" }), "Left ventricle");
@@ -40,10 +40,11 @@ test("question preview reflects the prompt, options, and selected correct answer
 });
 
 test("question editor follows the content order and keeps image controls compact", () => {
-  const { container } = render(<QuestionForm action={vi.fn()} assessmentType="QUIZ" topics={[{ id: "topic-id", label: "Heart" }]} />);
+  const { container } = render(<QuestionForm action={vi.fn()} assessmentType="QUIZ" />);
 
   expect(screen.getByText("Quiz question")).toBeInTheDocument();
-  expect(screen.getByRole("combobox", { name: "Topic" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Choose topic" })).toBeInTheDocument();
+  expect(container.querySelector('input[name="topicId"]')).toHaveValue("");
   expect(screen.getByRole("combobox", { name: "Difficulty" }).closest("label")).toHaveClass("self-start");
   expect(screen.getByRole("region", { name: "Question image" })).toHaveAttribute("data-compact", "true");
   expect(screen.getByRole("group", { name: /Answer options/ })).toBeInTheDocument();
@@ -52,7 +53,7 @@ test("question editor follows the content order and keeps image controls compact
 });
 
 test("question editor has roomy sections and a compact sticky metadata sidebar", () => {
-  render(<QuestionForm action={vi.fn()} assessmentType="TEST" topics={[{ id: "topic-id", label: "Heart" }]} />);
+  render(<QuestionForm action={vi.fn()} assessmentType="TEST" />);
 
   expect(screen.getByRole("heading", { name: "Question Details" })).toBeVisible();
   expect(screen.getByRole("heading", { name: "Answer Options" })).toBeVisible();
@@ -82,7 +83,6 @@ test("question and option image controls receive existing signed previews", () =
         { id: "option-b", optionText: "Right atrium", mediaId: null, isCorrect: false },
       ],
     }}
-    topics={[{ id: "topic-id", label: "Heart" }]}
   />);
 
   expect(screen.getByRole("img", { name: "Heart diagram" })).toHaveAttribute("src", "https://signed.example/question");

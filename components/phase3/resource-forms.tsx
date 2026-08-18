@@ -1,12 +1,13 @@
 import type { ContentBlock, RichTextDocument } from "@/features/content/schemas";
 import { LessonEditor } from "@/components/lessons/lesson-editor";
 import { DirectImageInput } from "@/components/media/direct-image-input";
+import { TopicPicker } from "@/components/shared/topic-picker";
 import { ActionForm, type FormAction } from "./action-form";
 import { fieldClass, labelClass, panelClass } from "./admin-ui";
 
 type System = { name: string; slug: string; shortDescription: string; longDescription?: string | null; coverMediaId?: string | null; iconMediaId?: string | null; displayOrder: number; isActive: boolean };
 type Topic = { organSystemId: string; title: string; slug: string; summary?: string | null; coverMediaId?: string | null; displayOrder: number };
-type Lesson = { topicId: string; title: string; slug: string; summary?: string | null; contentBlocks: ContentBlock[]; richContent?: RichTextDocument; estimatedReadingMinutes: number; displayOrder: number };
+type Lesson = { topicId: string; topicTitle?: string | null; title: string; slug: string; summary?: string | null; contentBlocks: ContentBlock[]; richContent?: RichTextDocument; estimatedReadingMinutes: number; displayOrder: number };
 type Option = { id: string; label: string };
 type MediaPreview = { signedUrl: string; altText: string };
 type ExistingLessonMedia = Record<string, MediaPreview>;
@@ -40,11 +41,11 @@ export function TopicForm({ action, item, systems, coverMedia }: { action: FormA
   </ActionForm></div>;
 }
 
-export function LessonForm({ action, item, topics, existingMedia = {} }: { action: FormAction; item?: Lesson; topics: Option[]; existingMedia?: ExistingLessonMedia }) {
+export function LessonForm({ action, item, existingMedia = {} }: { action: FormAction; item?: Lesson; existingMedia?: ExistingLessonMedia }) {
   const initialBlocks: ContentBlock[] = item?.contentBlocks ?? [{ type: "heading", level: 2, text: "Overview" }, { type: "paragraph", text: "Add lesson text here." }];
   return <div className={panelClass}><ActionForm action={action} guardUnsavedChanges="lesson" label={item ? "Save draft changes" : "Create lesson"} stickyActions>
     <FormSection description="Set the curriculum location and learner-facing identity." title="Lesson details">
-      <label className={labelClass}>Topic<select className={fieldClass} defaultValue={item?.topicId} name="topicId" required><option value="">Select a topic</option>{topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}</select></label>
+      <TopicPicker initialLabel={item?.topicTitle} label="Topic" name="topicId" value={item?.topicId} />
       <div className="grid gap-5 md:grid-cols-2"><label className={labelClass}>Title<input className={fieldClass} defaultValue={item?.title} name="title" required /></label><label className={labelClass}>Slug<input className={fieldClass} defaultValue={item?.slug} name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></label></div>
       <label className={labelClass}>Summary<textarea className={`${fieldClass} min-h-24 py-3`} defaultValue={item?.summary ?? ""} name="summary" /></label>
     </FormSection>

@@ -153,6 +153,17 @@ the current canonical path. Topic and lesson update navigation replaces the old 
 entry when an editable slug or parent changes; UUID-based REST and learner contracts are
 unchanged.
 
+### Admin topic selection
+
+Lesson, flashcard, and question editors, plus their admin list filters, use the shared
+`TopicPicker` client component. It requests authenticated, title-sorted pages of twelve
+non-trashed topics through a server action, rather than embedding a fixed first page in
+each form. Search covers the topic title, topic summary, and parent organ-system name;
+the picker hydrates a saved selection outside the active page and provides explicit
+previous/next pagination. The browser never queries application tables directly. Scoped
+organ-system topic lists use the same server-side content query with validated search,
+status filtering, curriculum-order sorting, and fifteen-result pagination.
+
 ## Phase 4 learning-item flows
 
 ### Flashcards
