@@ -30,7 +30,7 @@ export function ActionForm({ action, children, guardUnsavedChanges, label = "Sav
   return <>{guardUnsavedChanges ? <UnsavedNavigationGuard dirty={dirty} subject={guardUnsavedChanges} /> : null}<form action={formAction} className="grid gap-5" onChange={() => setDirty(true)} onClick={(event) => { if ((event.target as Element).closest("[data-form-dirty]")) setDirty(true); }}><ActionNotice state={state} />{children}<div className={stickyActions ? "sticky bottom-0 z-20 -mx-4 flex justify-end border-t border-border bg-surface/95 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6" : "flex justify-end border-t border-border pt-5"}><PendingButton pending={pending} pendingLabel={pendingLabel}>{label}</PendingButton></div></form></>;
 }
 
-export function InlineAction({ action, ariaLabel, children, confirmLabel = "Confirm", confirmMessage, confirmTitle = "Confirm action", destructive = false, pendingLabel = "Working" }: { action: FormAction; ariaLabel?: string; children: React.ReactNode; confirmLabel?: string; confirmMessage?: string; confirmTitle?: string; destructive?: boolean; pendingLabel?: string }) {
+export function InlineAction({ action, ariaLabel, children, confirmLabel = "Confirm", confirmMessage, confirmTitle = "Confirm action", destructive = false, pendingLabel = "Working", variant }: { action: FormAction; ariaLabel?: string; children: React.ReactNode; confirmLabel?: string; confirmMessage?: string; confirmTitle?: string; destructive?: boolean; pendingLabel?: string; variant?: "destructive" | "destructiveOutline" | "outline" }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState(async (previous: ActionState, formData: FormData) => {
     const next = await action(previous, formData);
@@ -43,5 +43,6 @@ export function InlineAction({ action, ariaLabel, children, confirmLabel = "Conf
     return next;
   }, {});
   const formRef = useRef<HTMLFormElement>(null);
-  return <form action={formAction} ref={formRef}><ActionNotice state={state} />{confirmMessage ? <ConfirmationDialog confirmLabel={confirmLabel} description={confirmMessage} onConfirm={() => formRef.current?.requestSubmit()} pending={pending} title={confirmTitle}><PendingButton aria-label={ariaLabel} pending={pending} pendingLabel={pendingLabel} size="sm" type="button" variant={destructive ? "destructive" : "outline"}>{children}</PendingButton></ConfirmationDialog> : <PendingButton aria-label={ariaLabel} pending={pending} pendingLabel={pendingLabel} size="sm" variant={destructive ? "destructive" : "outline"}>{children}</PendingButton>}</form>;
+  const buttonVariant = variant ?? (destructive ? "destructive" : "outline");
+  return <form action={formAction} ref={formRef}><ActionNotice state={state} />{confirmMessage ? <ConfirmationDialog confirmLabel={confirmLabel} description={confirmMessage} onConfirm={() => formRef.current?.requestSubmit()} pending={pending} title={confirmTitle}><PendingButton aria-label={ariaLabel} pending={pending} pendingLabel={pendingLabel} size="sm" type="button" variant={buttonVariant}>{children}</PendingButton></ConfirmationDialog> : <PendingButton aria-label={ariaLabel} pending={pending} pendingLabel={pendingLabel} size="sm" variant={buttonVariant}>{children}</PendingButton>}</form>;
 }

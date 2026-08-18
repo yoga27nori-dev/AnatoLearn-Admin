@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Send, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { InlineAction } from "@/components/phase3/action-form";
@@ -27,7 +28,7 @@ export default async function CanonicalContentPage({ params }: { params: Promise
   const existingMedia = Object.fromEntries(media.entries());
 
   return <>
-    <PageHeader action={<div className="flex flex-wrap gap-2"><StatusBadge status={item.status} />{item.status === "DRAFT" && <InlineAction action={changeResourceStatus.bind(null, "contentLesson", item.id, "PUBLISHED")}>Publish</InlineAction>}{item.status !== "ARCHIVED" && <InlineAction action={trashResourceAction.bind(null, "content-lesson", item.id)} confirmMessage="This hides the lesson from normal views. It can be restored from Settings > Trash for 30 days. Continue?">Delete</InlineAction>}</div>} description="Edit validated blocks and control the lesson publication lifecycle." eyebrow="Content review" title={item.title} />
+    <PageHeader action={<div aria-label="Lesson actions" className="flex flex-wrap items-center justify-end gap-2" role="group"><StatusBadge status={item.status} />{item.status === "DRAFT" && <InlineAction action={changeResourceStatus.bind(null, "contentLesson", item.id, "PUBLISHED")} ariaLabel={`Publish ${item.title}`}><Send aria-hidden className="size-4" />Publish</InlineAction>}{item.status !== "ARCHIVED" && <InlineAction action={trashResourceAction.bind(null, "content-lesson", item.id)} ariaLabel={`Delete ${item.title}`} confirmMessage="This hides the lesson from normal views. It can be restored from Settings > Trash for 30 days. Continue?" variant="destructiveOutline"><Trash2 aria-hidden className="size-4" />Delete</InlineAction>}</div>} description="Edit validated blocks and control the lesson publication lifecycle." eyebrow="Content review" title={item.title} />
     <LessonForm action={updateResource.bind(null, "contentLesson", item.id)} existingMedia={existingMedia} item={item} />
   </>;
 }

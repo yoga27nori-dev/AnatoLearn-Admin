@@ -56,18 +56,19 @@ export function TopicPicker({ initialLabel, label, name, required = true, value 
     setOpen(false);
   };
 
-  return <div className="grid gap-2">
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"><span className="text-sm font-semibold text-body">{label} <span className="font-normal text-muted">{required ? "Required" : "Optional"}</span></span>{selectedId ? <span className="text-xs font-medium text-success">Selected</span> : null}</div>
-    <input name={name} ref={inputRef} type="hidden" value={selectedId} />
-    {selectedId ? <div className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary-soft px-3 py-2"><div className="min-w-0"><p className="truncate text-sm font-bold text-foreground">{selectedLabel || (required ? "Current topic selected" : "Topic filter active")}</p><p className="text-xs text-muted">Use the picker to search or change this topic.</p></div><div className="flex shrink-0 gap-3"><button aria-label={`Change ${label}`} className="text-sm font-semibold text-primary hover:text-primary-hover" onClick={() => setOpen(true)} type="button">Change</button>{!required ? <button aria-label={`Clear ${label}`} className="text-sm font-semibold text-muted hover:text-foreground" onClick={() => { setSelectedId(""); setSelectedLabel(""); }} type="button">Clear</button> : null}</div></div> : <p className="text-sm text-muted" id={descriptionId}>{required ? "Select the curriculum topic for this item." : "Optionally narrow results to one curriculum topic."}</p>}
-    <Dialog.Root onOpenChange={(next) => {
+  const trigger = (compact = false) => <Dialog.Trigger asChild><Button aria-describedby={selectedId ? undefined : descriptionId} className={compact ? "shrink-0 whitespace-nowrap" : "w-full sm:w-fit"} size={compact ? "sm" : "default"} type="button" variant="outline"><Search aria-hidden className="size-4" />{selectedId ? "Change topic" : "Choose topic"}</Button></Dialog.Trigger>;
+
+  return <Dialog.Root onOpenChange={(next) => {
       setOpen(next);
       if (next) {
         setSearch("");
         load(1, "");
       }
     }} open={open}>
-      <Dialog.Trigger asChild><Button aria-describedby={selectedId ? undefined : descriptionId} className="w-full sm:w-fit" type="button" variant="outline">Choose topic</Button></Dialog.Trigger>
+      <div className={required ? "grid gap-2" : "min-w-0"}>
+        <input name={name} ref={inputRef} type="hidden" value={selectedId} />
+        {required ? <><div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1"><span className="text-sm font-semibold text-body">{label} <span className="font-normal text-muted">Required</span></span>{selectedId ? <span className="text-xs font-medium text-success">Selected</span> : null}</div>{selectedId ? <div className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary-soft px-3 py-2"><div className="min-w-0"><p className="truncate text-sm font-bold text-foreground">{selectedLabel || "Current topic selected"}</p><p className="text-xs text-muted">Use the picker to search or change this topic.</p></div>{trigger()}</div> : <><p className="text-sm text-muted" id={descriptionId}>Select the curriculum topic for this item.</p>{trigger()}</>}</> : <div className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-border bg-subtle px-3 py-2"><div className="min-w-0"><p className="text-sm font-semibold text-body">{label} <span className="font-normal text-muted">Optional</span></p><p className="truncate text-xs text-muted" id={descriptionId}>{selectedId ? selectedLabel || "Topic filter active" : "Filter results by curriculum topic."}</p></div><div className="flex shrink-0 items-center gap-2">{trigger(true)}{selectedId ? <button aria-label={`Clear ${label}`} className="text-sm font-semibold text-muted hover:text-foreground" onClick={() => { setSelectedId(""); setSelectedLabel(""); }} type="button">Clear</button> : null}</div></div>}
+      </div>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-slate-950/40" />
         <Dialog.Content className="fixed inset-x-4 top-1/2 z-50 max-h-[85vh] -translate-y-1/2 overflow-y-auto rounded-2xl border border-border bg-surface p-4 shadow-xl sm:left-1/2 sm:w-[min(720px,calc(100%-2rem))] sm:-translate-x-1/2 sm:p-6">
@@ -79,5 +80,4 @@ export function TopicPicker({ initialLabel, label, name, required = true, value 
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
-  </div>;
 }

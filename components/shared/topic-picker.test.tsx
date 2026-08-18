@@ -29,7 +29,9 @@ test("searches every eligible topic and stores the selected UUID in the form", a
   expect(container.querySelector('input[name="topicId"]')).toHaveValue("topic-heart");
   expect(screen.getByText("Heart anatomy")).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "Choose topic" }));
+  expect(screen.queryByRole("button", { name: "Choose topic" })).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "Change topic" }));
   expect(searchTopics).toHaveBeenCalledWith({ page: 1, search: "", selectedId: "topic-heart" });
 
   await user.type(screen.getByRole("searchbox", { name: "Search topics" }), "vas deferens");
@@ -73,7 +75,7 @@ test("lets list filters clear the selected topic", async () => {
   await user.click(screen.getByRole("button", { name: "Clear Topic" }));
 
   expect(container.querySelector('input[name="topicId"]')).toHaveValue("");
-  expect(screen.getByText("Optionally narrow results to one curriculum topic.")).toBeInTheDocument();
+  expect(screen.getByText("Filter results by curriculum topic.")).toBeInTheDocument();
 });
 
 test("does not submit the surrounding form when opening the picker", async () => {

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Send, Trash2 } from "lucide-react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { InlineAction } from "@/components/phase3/action-form";
@@ -23,7 +24,7 @@ export default async function CanonicalTopicPage({ params }: { params: Promise<{
   const coverMedia = item.coverMediaId ? media.get(item.coverMediaId) : undefined;
 
   return <>
-    <PageHeader action={<div className="flex flex-wrap gap-2"><StatusBadge status={item.status} />{item.status === "DRAFT" && <InlineAction action={changeResourceStatus.bind(null, "topic", item.id, "PUBLISHED")}>Publish</InlineAction>}{item.status !== "ARCHIVED" && <InlineAction action={trashResourceAction.bind(null, "topic", item.id)} confirmMessage="This hides the topic and its content from normal views. It can be restored from Settings > Trash for 30 days. Continue?">Delete</InlineAction>}</div>} description="Edit the topic and its place in the anatomy curriculum." eyebrow="Topics" title={item.title} />
+    <PageHeader action={<div aria-label="Topic actions" className="flex flex-wrap items-center justify-end gap-2" role="group"><StatusBadge status={item.status} />{item.status === "DRAFT" && <InlineAction action={changeResourceStatus.bind(null, "topic", item.id, "PUBLISHED")} ariaLabel={`Publish ${item.title}`}><Send aria-hidden className="size-4" />Publish</InlineAction>}{item.status !== "ARCHIVED" && <InlineAction action={trashResourceAction.bind(null, "topic", item.id)} ariaLabel={`Delete ${item.title}`} confirmMessage="This hides the topic and its content from normal views. It can be restored from Settings > Trash for 30 days. Continue?" variant="destructiveOutline"><Trash2 aria-hidden className="size-4" />Delete</InlineAction>}</div>} description="Edit the topic and its place in the anatomy curriculum." eyebrow="Topics" title={item.title} />
     <TopicForm action={updateResource.bind(null, "topic", item.id)} coverMedia={coverMedia} item={item} systems={systems.items.map((system) => ({ id: system.id, label: system.name }))} />
   </>;
 }

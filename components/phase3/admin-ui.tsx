@@ -13,7 +13,7 @@ export function StatusBadge({ status }: { status: string }) {
 }
 
 export function FilterBar({ children, defaultValue, placeholder = "Search" }: { children?: React.ReactNode; defaultValue?: string; placeholder?: string }) {
-  return <form className="mb-5 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[minmax(220px,1fr)_auto_auto]" method="get">
+  return <form className="mb-5 grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-[minmax(220px,1fr)_auto_auto] sm:items-center" method="get">
     <label className="relative"><span className="sr-only">Search</span><Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-muted" /><input className={cn(fieldClass, "pl-9")} defaultValue={defaultValue} name="q" placeholder={placeholder} /></label>
     {children}
     <button className={buttonVariants({ variant: "outline" })} type="submit">Apply filters</button>

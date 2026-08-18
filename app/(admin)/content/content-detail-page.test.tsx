@@ -14,9 +14,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({ notFound: mocks.notFound, redirect: mocks.redirect }));
-vi.mock("@/components/app-shell/page-header", () => ({ PageHeader: ({ title }: { title: string }) => <h1>{title}</h1> }));
-vi.mock("@/components/phase3/action-form", () => ({ InlineAction: () => null }));
-vi.mock("@/components/phase3/admin-ui", () => ({ StatusBadge: () => null }));
+vi.mock("@/components/app-shell/page-header", () => ({ PageHeader: ({ action, title }: { action?: React.ReactNode; title: string }) => <><h1>{title}</h1>{action}</> }));
+vi.mock("@/components/phase3/action-form", () => ({ InlineAction: ({ ariaLabel, children, variant }: { ariaLabel?: string; children: React.ReactNode; variant?: string }) => <button aria-label={ariaLabel} data-variant={variant}>{children}</button> }));
+vi.mock("@/components/phase3/admin-ui", () => ({ StatusBadge: ({ status }: { status: string }) => <span>{status}</span> }));
 vi.mock("@/components/phase3/data", () => ({
   getAdminLessonBySlugs: mocks.getAdminLessonBySlugs,
   getAdminLessonRouteById: mocks.getAdminLessonRouteById,
@@ -82,6 +82,16 @@ describe("canonical content detail page routing", () => {
     expect(mocks.getAdminMediaMap).toHaveBeenCalledWith(["lesson-media"]);
     expect(screen.getByRole("heading", { name: "Heart anatomy" })).toBeVisible();
     expect(screen.getByText(/https:\/\/signed\.example\/lesson/)).toBeVisible();
+  });
+
+  it("keeps publication and delete controls aligned in one action group", async () => {
+    render(await CanonicalContentPage({ params: Promise.resolve({ slug: "circulatory", topicSlug: "heart-anatomy", lessonSlug: "heart-anatomy" }) }));
+
+    const actions = screen.getByRole("group", { name: "Lesson actions" });
+    expect(actions).toHaveClass("items-center");
+    expect(screen.getByRole("button", { name: "Publish Heart anatomy" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Delete Heart anatomy" })).toHaveAttribute("data-variant", "destructiveOutline");
+    expect(actions.querySelectorAll("svg")).toHaveLength(2);
   });
 
   it("propagates invalid stored content to the error boundary", async () => {

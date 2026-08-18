@@ -30,6 +30,13 @@ test("confirmation supports focus, cancel, and confirm without window.confirm", 
   confirm.mockRestore();
 });
 
+test("renders a destructive action with an outlined warning treatment", () => {
+  const action = vi.fn().mockResolvedValue({ success: "Deleted" });
+  render(<InlineAction action={action} variant="destructiveOutline">Delete</InlineAction>);
+
+  expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("border-destructive", "text-destructive");
+});
+
 test("guarded forms stay dirty after failure and clear after a successful save", async () => {
   const user = userEvent.setup();
   const action = vi.fn()
