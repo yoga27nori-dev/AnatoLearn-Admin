@@ -2,6 +2,7 @@ import { AssessmentType, PublishStatus } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
 import { contentBlocksSchema } from "../features/content/schemas";
+import { publishCanonicalDemo, type DemoPublicationStore } from "./demo-publication";
 import { assertCanonicalSeed, createCanonicalSeedPlan } from "./seed-data";
 import { installCanonicalSeed, type SeedStore } from "./seed-service";
 
@@ -127,5 +128,55 @@ describe("canonical seed data", () => {
       "question",
       "questionOption",
     ]);
+  });
+
+  it("publishes only canonical demo records and verifies every expected row", async () => {
+    const plan = createCanonicalSeedPlan();
+    const calls: Array<{ model: string; args: unknown }> = [];
+    const delegate = (model: string, count: number) => ({
+      updateMany: vi.fn(async (args: unknown) => {
+        calls.push({ model, args: structuredClone(args) });
+        return { count };
+      }),
+    });
+    const store = {
+      organSystem: delegate("organSystem", plan.systems.length),
+      topic: delegate("topic", plan.topics.length),
+      contentLesson: delegate("contentLesson", 1),
+      flashcard: delegate("flashcard", plan.flashcards.length),
+      question: delegate("question", plan.questions.length),
+    } as unknown as DemoPublicationStore;
+
+    await publishCanonicalDemo(store, plan);
+
+    expect(calls.map(({ model }) => model)).toEqual([
+      "organSystem",
+      "topic",
+      "contentLesson",
+      "flashcard",
+      "question",
+    ]);
+    expect(calls[0]?.args).toEqual({
+      where: { id: { in: plan.systems.map(({ id }) => id) } },
+      data: { status: PublishStatus.PUBLISHED, isActive: true },
+    });
+    expect(calls[4]?.args).toEqual({
+      where: { id: { in: plan.questions.map(({ id }) => id) } },
+      data: { status: PublishStatus.PUBLISHED, isActive: true },
+    });
+  });
+
+  it("fails demo publication when any canonical record is missing", async () => {
+    const plan = createCanonicalSeedPlan();
+    const delegate = (count: number) => ({ updateMany: vi.fn(async () => ({ count })) });
+    const store = {
+      organSystem: delegate(plan.systems.length),
+      topic: delegate(plan.topics.length),
+      contentLesson: delegate(1),
+      flashcard: delegate(plan.flashcards.length),
+      question: delegate(plan.questions.length - 1),
+    } as unknown as DemoPublicationStore;
+
+    await expect(publishCanonicalDemo(store, plan)).rejects.toThrow("question");
   });
 });

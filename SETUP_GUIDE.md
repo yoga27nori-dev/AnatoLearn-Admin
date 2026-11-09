@@ -23,6 +23,12 @@ table policies for browser/mobile clients. Auth and Storage remain Supabase inte
 
 Enable email/password Auth. Configure:
 
+- email confirmations: enabled;
+- signup OTP length: 6 digits;
+- signup OTP expiry: 600 seconds;
+- confirmation email template: include `{{ .Token }}` and no confirmation URL;
+- production SMTP: configured and verified before release;
+
 - site URL: `http://localhost:3000` locally;
 - callback: `http://localhost:3000/auth/callback`;
 - password reset: `http://localhost:3000/auth/callback?next=%2Freset-password`;
@@ -34,11 +40,25 @@ Admin web sessions use secure SSR cookies. Native Expo clients send a verified S
 access token as `Authorization: Bearer <token>`. Native requests do not require browser
 CORS; no application CORS variable exists. CORS is not an authorization control.
 
+Do not deploy the OTP registration routes while hosted Supabase email confirmations are
+disabled. Release acceptance must use the hosted project and production SMTP to prove:
+
+1. signup and resend deliver the intended six-digit token email, not a confirmation link;
+2. registration returns no session/profile, including for existing-account outcomes;
+3. OTP verification writes the server-controlled
+   `app_metadata.signup_otp_verified: true` marker and creates one application profile;
+4. an invalid/expired token is rejected while provider transport, `429`, and `5xx`
+   failures produce the temporary-unavailability response; and
+5. login remains password-only and can repair only a marked identity with a missing profile.
+
+Treat both the hosted OTP-template check and successful SMTP delivery as release gates;
+local/mocked route tests do not accept either provider configuration.
+
 ## 3. Private Storage
 
 Create a **private** bucket named `anatomy-media`. Do not make it public. Configure an
 8 MB limit and allow PNG, JPEG, and WebP. The application validates image bytes,
-dimensions, MIME agreement, and required alt text, then serves short-lived signed URLs.
+dimensions and MIME agreement, accepts optional alt text, then serves short-lived signed URLs.
 
 Use these exact settings in `.env.local`:
 
@@ -103,6 +123,17 @@ The seed is idempotent and **non-destructive**: canonical records are created on
 missing (`upsert` with empty updates), so repeated runs do not overwrite editorial work.
 Seeded anatomy material is draft/demo academic content and requires qualified review
 before publication.
+
+For an explicit demo/MVP environment that needs learner-visible sample material, run:
+
+```bash
+npm run db:publish-demo
+```
+
+This command installs any missing canonical records, validates the deterministic seed,
+and publishes only those canonical IDs in one transaction. It is idempotent and leaves
+unrelated drafts unchanged. The content remains clearly marked as demonstration material
+requiring academic review and must not be represented as reviewed medical guidance.
 
 `admin:bootstrap` finds an existing Auth user or creates one when a 12+ character
 temporary password is supplied, then links an active `ADMIN` profile. It compensates by

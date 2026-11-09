@@ -12,6 +12,8 @@ hardening migrations. Production deployment readiness is still externally gated;
 is not a claim that the product is deployed. The current application includes:
 
 - Supabase cookie and bearer authentication with active-profile and admin-role checks
+- Non-enumerating password signup with six-digit email OTP verification, a server-owned
+  verification marker, resend limits, deferred profile provisioning, and password-only login
 - Prisma 6.19.3 schema and migrations, a non-destructive create-if-missing seed, and a
   tested explicit administrator bootstrap script
 - Protected admin pages for organ systems, topics, structured lessons, private media,
@@ -99,6 +101,11 @@ npm run db:seed
 npm run admin:bootstrap # explicit, only when an administrator must be linked/created
 npm run dev
 ```
+
+`db:seed` intentionally leaves canonical academic-review material in draft. For an
+explicit demo/MVP environment, run `npm run db:publish-demo` to transactionally publish
+only the deterministic canonical records. The command is idempotent and does not publish
+unrelated editorial drafts.
 
 Open `http://localhost:3000`. Anonymous requests to protected admin pages redirect to
 `/login`; active `ADMIN` profiles can access the admin application.

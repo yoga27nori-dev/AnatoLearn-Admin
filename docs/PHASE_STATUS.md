@@ -1,5 +1,15 @@
 # AnatoLearn Phase Status
 
+## Production Sharp packaging investigation (2026-11-09)
+
+- Production logs show missing `libvips-cpp.so.8.18.3` when loading Sharp,
+  causing server errors on Organ Systems and other admin routes after redeployment.
+- Added Next.js output tracing includes for the Linux x64 Sharp native package and
+  its libvips files. An isolated Vercel preview successfully generated a test image;
+  the fix is deployed to production. Authenticated route verification is pending.
+- Lint, typecheck, build, and tests passed locally (737 passed, 15 skipped).
+- No schema, migration, API contract, or production data change is involved.
+
 ## Current phase
 
 **Phase 7: Hardening and delivery — repository implementation complete; external gates open**
