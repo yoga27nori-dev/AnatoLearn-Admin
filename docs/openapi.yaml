@@ -1641,7 +1641,7 @@ components:
       description: Separates authenticated representations by bearer and cookie credentials.
       schema: { type: string, const: 'Authorization, Cookie' }
     RetryAfter:
-      description: Seconds until the process-local rate-limit window permits retry.
+      description: Seconds until the rate-limit window permits retry.
       schema: { type: integer, minimum: 1 }
   parameters:
     Id:

@@ -1,3 +1,6 @@
+import type { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db/prisma";
+
 type Entry = { count: number; resetsAt: number };
 export type RateLimitInput = { key: string; limit: number; windowMs: number };
 export type RateLimitResult = { allowed: boolean; retryAfterSeconds: number };
@@ -40,42 +43,42 @@ export class MemoryRateLimiter implements RateLimiter {
   }
 }
 
-export class UpstashRateLimiter implements RateLimiter {
-  constructor(private url: string, private token: string) {}
+export class PostgresRateLimiter implements RateLimiter {
+  constructor(private db: Pick<PrismaClient, "$queryRaw" | "$executeRaw"> = prisma) {}
 
   async check({ key, limit, windowMs }: RateLimitInput): Promise<RateLimitResult> {
-    const script = "local n=redis.call('INCR',KEYS[1]); if n==1 then redis.call('PEXPIRE',KEYS[1],ARGV[1]) end; local ttl=redis.call('PTTL',KEYS[1]); return {n,ttl}";
-    const response = await fetch(this.url, {
-      method: "POST",
-      headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json" },
-      body: JSON.stringify(["EVAL", script, "1", key, String(windowMs)]),
-      signal: AbortSignal.timeout(3_000),
-    });
-    if (!response.ok) throw new Error("Distributed rate limiter is unavailable.");
-    const payload = await response.json() as { result?: [number, number] };
-    if (!Array.isArray(payload.result) || payload.result.length !== 2) throw new Error("Distributed rate limiter returned an invalid response.");
+    const opaqueKey = await rateLimitKey("bucket", key);
+    if (Math.random() < 0.01) {
+      await this.db.$executeRaw`DELETE FROM "RateLimitBucket" WHERE "key" IN (
+        SELECT "key" FROM "RateLimitBucket" WHERE "expiresAt" <= statement_timestamp()
+        ORDER BY "expiresAt" LIMIT 100
+      ) AND "expiresAt" <= statement_timestamp()`;
+    }
+    const rows = await this.db.$queryRaw<{ count: number; retryAfterSeconds: number }[]>`
+      INSERT INTO "RateLimitBucket" ("key", "count", "expiresAt")
+      VALUES (${opaqueKey}, 1, statement_timestamp() + ${windowMs} * interval '1 millisecond')
+      ON CONFLICT ("key") DO UPDATE SET
+        "count" = CASE WHEN "RateLimitBucket"."expiresAt" <= statement_timestamp()
+          THEN 1 ELSE LEAST("RateLimitBucket"."count" + 1, ${limit + 1}) END,
+        "expiresAt" = CASE WHEN "RateLimitBucket"."expiresAt" <= statement_timestamp()
+          THEN statement_timestamp() + ${windowMs} * interval '1 millisecond'
+          ELSE "RateLimitBucket"."expiresAt" END
+      RETURNING "count", GREATEST(1, CEIL(EXTRACT(EPOCH FROM ("expiresAt" - statement_timestamp()))))::integer AS "retryAfterSeconds"
+    `;
+    const result = rows[0];
+    if (!result) throw new Error("Rate limiter returned no result.");
     return {
-      allowed: payload.result[0] <= limit,
-      retryAfterSeconds: Math.max(1, Math.ceil(payload.result[1] / 1000)),
+      allowed: result.count <= limit,
+      retryAfterSeconds: result.retryAfterSeconds,
     };
   }
 }
 
 const memoryLimiter = new MemoryRateLimiter();
+const postgresLimiter = new PostgresRateLimiter();
 
 export function getRateLimiter(): RateLimiter {
-  const vercelUrl = process.env.KV_REST_API_URL?.trim();
-  const vercelToken = process.env.KV_REST_API_TOKEN?.trim();
-  if (vercelUrl && vercelToken) return new UpstashRateLimiter(vercelUrl, vercelToken);
-
-  const customUrl = process.env.UPSTASH_REDIS_REST_URL?.trim();
-  const customToken = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
-  if (customUrl && customToken) return new UpstashRateLimiter(customUrl, customToken);
-
-  if (customUrl || customToken || vercelUrl || vercelToken || process.env.NODE_ENV === "production") {
-    return { check: async () => { throw new Error("Production rate limiting is not configured."); } };
-  }
-  return memoryLimiter;
+  return process.env.NODE_ENV === "production" ? postgresLimiter : memoryLimiter;
 }
 
 export async function rateLimitKey(namespace: string, identifier: string) {

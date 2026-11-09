@@ -51,7 +51,7 @@ is not a claim that the product is deployed. The current application includes:
 - Exact-origin cookie CSRF checks, nonce-based CSP, production HSTS, security headers,
   request IDs, private no-store/Vary defaults, explicit public cache policy, and
   structured redacted error logging
-- Upstash REST rate-limiter support required in production, with a bounded in-memory
+- PostgreSQL rate limiting in production, with a bounded in-memory
   fallback only in development/test; authentication uses separate client and account keys
 - A continuous rich lesson editor with validated preview, managed images, three-level
   nested lists, safe formatted paste from Google Docs, local DOCX import, and
@@ -67,7 +67,7 @@ is not a claim that the product is deployed. The current application includes:
   overflow hardening, with Vitest/RTL and axe-enabled Playwright foundations
 
 Phase 7 repository implementation is complete. External gates remain: configure and verify
-the Vercel daily cron plus GitHub Actions scheduler secrets, install Upstash secrets,
+the Vercel daily cron plus GitHub Actions scheduler secrets,
 exercise real Expo/EAS devices and Supabase Auth/Storage, provide admin E2E credentials,
 perform backup/restore and production deployment, and optionally add Sentry/monitoring.
 See `docs/PHASE_STATUS.md` for the exact boundary.
@@ -87,10 +87,8 @@ or a production build from starting. The internal cron route validates it throug
 `cronEnvSchema`/`getCronEnv`: absent or blank disables that route with `503`, while a
 configured value shorter than 32 characters fails safely through the API error mapper.
 `npm run env:check` still rejects a configured short secret as an intentional deployment
-configuration gate. Production validation additionally requires either Vercel Upstash's
-paired `KV_REST_API_URL`/`KV_REST_API_TOKEN` variables or the self-managed
-`UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` pair. Development/test may leave both
-pairs blank to use the bounded process-local fallback.
+configuration gate. Production rate limiting uses the existing `DATABASE_URL`; apply
+the rate-limit migration before deploying. Development/test use process-local counters.
 
 ```bash
 npm install
@@ -233,7 +231,7 @@ including `20260714140000_add_trash_audit_actions` and `20260714141000_add_safe_
 through Next.js; there is no safe stable fix, and `npm audit fix --force` would downgrade
 Next.js to 9, so it was not used. `npm run env:check` currently fails only because the
 local `CRON_SECRET` is invalid. Real Expo delivery, authenticated admin E2E, real Supabase
-provider integration, cron schedules, Upstash production credentials, backup/restore,
+provider integration, cron schedules, production rate-limit verification, backup/restore,
 and production deployment remain unverified external gates.
 
 ## Project references

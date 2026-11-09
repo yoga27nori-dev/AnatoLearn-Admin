@@ -4,7 +4,7 @@
 
 Phases 0-7 are implemented in the repository and all fourteen migrations are current in the
 configured development database. Production readiness remains externally gated by cron,
-Upstash, provider, authenticated-E2E, backup/restore, and deployment work. This document
+provider, authenticated-E2E, backup/restore, and deployment work. This document
 describes current behavior; it does not claim a production deployment.
 `MASTER_BUILD_PROMPT.md` is the authoritative product scope because no separate product
 SRS is present.
@@ -94,10 +94,9 @@ privileged server-only Auth operations.
 - Unexpected API errors produce a single structured JSON log containing only level,
   request ID, safe code/status, and optional route. Request bodies, credentials, provider
   messages, stack traces, and arbitrary exception text are not logged.
-- The rate-limit interface uses an atomic Upstash Redis REST script with either Vercel's
-  `KV_REST_API_*` pair or the self-managed `UPSTASH_REDIS_REST_*` pair. Production
-  environment validation requires one complete pair and fails closed if limiting is
-  unavailable. Development/test may use a bounded 10,000-key memory adapter.
+- Production rate limiting uses atomic PostgreSQL upserts through Prisma, hashed bucket
+  keys, and bounded opportunistic cleanup of expired rows. It fails closed when the
+  database is unavailable. Development/test use a bounded 10,000-key memory adapter.
   Authentication checks separate hashed client and normalized-account keys;
   trusted client addresses come only from Vercel's forwarded header in Vercel runtime.
 
@@ -750,10 +749,8 @@ audit events.
   isolated from shared runtime startup, and the production build passes without a
   `CRON_SECRET` override; deployment still requires configured production secrets.
   Phase 5 is therefore implementation-complete but not configuration-complete.
-- Distributed limiting is implemented. A Vercel Upstash resource is provisioned for the
-  production project; deployed behavior still requires verification after the compatible
-  application revision is promoted. Development/test intentionally use process memory
-  when both supported credential pairs are absent.
+- Distributed limiting uses PostgreSQL; apply the bucket migration before deploying and
+  verify the deployed behavior. Development/test intentionally use process memory.
 - Expo provider behavior is unit-tested at the adapter boundary but has not been verified
   with real credentials/devices. The provider can be disabled or misconfigured.
 - Notification-worker lease behavior lacks a real PostgreSQL multi-worker concurrency
@@ -769,6 +766,6 @@ audit events.
 
 Phase 7 repository implementation is complete. Production deployment readiness remains
 gated on a valid random `CRON_SECRET`, the Vercel daily schedule, and the GitHub Actions
-scheduler, production Upstash credentials,
+scheduler, the production rate-limit migration,
 real Expo/EAS ticket/receipt/partial/device testing, authenticated admin E2E credentials,
 real Supabase provider integration, and backup/restore plus deployment verification.

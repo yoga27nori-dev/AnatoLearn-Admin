@@ -34,7 +34,7 @@ Install Chromium once with `npx playwright install chromium`.
 - nonce CSP, global security headers, production-only HSTS, robots/metadata
 - request-ID correlation, private no-store/Vary defaults, and explicit public cache rules
 - structured logging redaction (no supplied body/password/token/exception text)
-- Upstash adapter behavior, paired production environment validation, bounded memory
+- PostgreSQL adapter behavior, bounded memory
   fallback, fail-closed errors, and separate client/account auth quotas
 - authentication and profile request schemas
 - non-enumerating OTP registration/resend, strict six-digit verification, deferred profile
@@ -298,9 +298,8 @@ The default Vitest suite conditionally skips isolated database files without a d
 and five `anon`/`authenticated` direct-access/Prisma-operability cases. The access-control
 migrations are deployed to configured development, not production. `env:check` passes
 locally; production
-validation additionally requires one complete supported Upstash pair. Unit coverage accepts
-both Vercel's `KV_REST_API_*` names and the self-managed `UPSTASH_REDIS_REST_*` names while
-rejecting incomplete pairs.
+rate limiting uses PostgreSQL without Redis credentials. The concurrency integration test
+requires a dedicated migrated `TEST_DATABASE_URL`.
 
 The Phase 6 migrations are split because PostgreSQL requires newly added enum values to
 commit before checks/indexes can reference them. Both repeat the empty notification-table
@@ -329,7 +328,7 @@ No current automated test proves the following end to end or against real provid
 - real Expo push ticket/receipt behavior on devices
 - notification worker leases/materialization under concurrent PostgreSQL workers
 - authenticated dashboard/users/feedback/notification Playwright flows
-- production Upstash credentials and deployed distributed-limiter verification
+- production PostgreSQL rate-limit migration and deployed limiter verification
 
 Most external provider behavior still uses mocks. Isolated PostgreSQL suites passed, but
 real Supabase Auth email/redirect/private Storage, Expo/EAS devices, Vercel/GitHub cron, backup/

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   MemoryRateLimiter,
+  PostgresRateLimiter,
   PROCESS_LOCAL_RATE_LIMIT_MAX_KEYS,
   checkRateLimit,
   checkAuthRateLimits,
@@ -46,32 +47,22 @@ describe("development process-local rate limiter", () => {
     expect(await rateLimitKey("auth:forgot", "user@example.com")).not.toBe(first);
   });
 
-  it("fails closed when distributed limiter configuration is incomplete", async () => {
-    const originalUrl = process.env.UPSTASH_REDIS_REST_URL;
-    const originalToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-    process.env.UPSTASH_REDIS_REST_URL = "https://redis.example";
-    delete process.env.UPSTASH_REDIS_REST_TOKEN;
-    await expect(checkRateLimit("auth:login", "user@example.com", 10)).resolves.toEqual({
-      allowed: false,
-      retryAfterSeconds: 60,
-    });
-    if (originalUrl === undefined) delete process.env.UPSTASH_REDIS_REST_URL;
-    else process.env.UPSTASH_REDIS_REST_URL = originalUrl;
-    if (originalToken === undefined) delete process.env.UPSTASH_REDIS_REST_TOKEN;
-    else process.env.UPSTASH_REDIS_REST_TOKEN = originalToken;
+  it("fails closed if the production database is unavailable", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const { prisma } = await import("@/lib/db/prisma");
+    vi.spyOn(prisma, "$queryRaw").mockRejectedValueOnce(new Error("database unavailable"));
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    await expect(checkRateLimit("auth:login", "user@example.com", 10)).resolves.toEqual({ allowed: false, retryAfterSeconds: 60 });
+    vi.restoreAllMocks();
   });
 
-  it("uses Vercel Upstash integration variables in production", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://legacy-redis.example");
-    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "legacy-token");
-    vi.stubEnv("KV_REST_API_URL", "https://redis.example");
-    vi.stubEnv("KV_REST_API_TOKEN", "integration-token");
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ result: [1, 60_000] }), { status: 200 }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(checkRateLimit("auth:login", "user@example.com", 10)).resolves.toMatchObject({ allowed: true });
-    expect(fetchMock).toHaveBeenCalledWith("https://redis.example", expect.objectContaining({ method: "POST" }));
+  it("maps database counts to rate-limit decisions", async () => {
+    const db = { $queryRaw: vi.fn().mockResolvedValue([{ count: 3, retryAfterSeconds: 12 }]), $executeRaw: vi.fn() };
+    vi.spyOn(Math, "random").mockReturnValue(1);
+    const limiter = new PostgresRateLimiter(db as unknown as ConstructorParameters<typeof PostgresRateLimiter>[0]);
+    await expect(limiter.check({ key: "private-key", limit: 2, windowMs: 60_000 })).resolves.toEqual({ allowed: false, retryAfterSeconds: 12 });
+    expect(db.$queryRaw.mock.calls[0]).not.toContain("private-key");
+    vi.restoreAllMocks();
   });
 
   it("trusts only Vercel's controlled forwarding header on Vercel", () => {

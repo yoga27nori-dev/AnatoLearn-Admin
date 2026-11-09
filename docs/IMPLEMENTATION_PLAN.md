@@ -197,9 +197,8 @@ remaining authenticated integration gaps.
 
 **Status: repository implementation complete; production deployment externally gated.**
 Delivered exact-origin CSRF checks; nonce CSP, security headers and production HSTS;
-request-ID/private-cache/public-cache contracts; structured redacted logging; Upstash
-distributed limiting with production-required paired credentials and development/test
-memory fallback; dual client/account auth quotas; registration enumeration resistance
+request-ID/private-cache/public-cache contracts; structured redacted logging; distributed
+limiting (now PostgreSQL in production, memory in development/test); dual client/account auth quotas; registration enumeration resistance
 and compensation; permanent notification-failure handling; Prisma 6.19.3; deployed
 development RLS/revoke migrations with isolated role tests; visual seven-block lesson
 editing and direct resource image uploads with managed-media retention; accessibility/responsive/metadata/robots/password/
@@ -217,9 +216,7 @@ tests passed, 13 skipped), isolated database run (2 files/9 tests), build (42 st
 generation units with nonce dynamic CSP output), and OpenAPI validation (108 unique parity-
 checked operations). Playwright was 17 passed/14 skipped; authenticated admin coverage did
 not run because its two credentials were absent. Nine migrations are current in the
-configured development database. `env:check` passes locally; production additionally
-requires either the paired Vercel Upstash integration values or the paired self-managed
-Upstash values. Trash PostgreSQL
+configured development database. `env:check` passes locally. Trash PostgreSQL
 acceptance passed 4/4 in isolation; the default database run skips it without
 `TEST_DATABASE_URL`.
 
@@ -237,7 +234,7 @@ acceptance passed 4/4 in isolation; the default database run skips it without
 - Vercel and Supabase configuration steps are reproducible.
 
 **Acceptance boundary:** repository checks and reproducible documentation are complete.
-External acceptance remains open for valid cron secret/schedules, production Upstash,
+External acceptance remains open for valid cron secret/schedules, production rate limiting,
 real Expo/EAS ticket/receipt/partial/`DeviceNotRegistered` behavior, authenticated admin
 E2E, real Supabase Auth email/redirect/private Storage, backup/restore, and production
 deployment. Optional Sentry/monitoring is not installed. RLS is deployed to configured
@@ -287,9 +284,15 @@ schema migration or dependency.
 
 Do not add another repository feature phase before external deployment acceptance. Install
 a valid random 32+ character `CRON_SECRET` and verify the Vercel daily plus GitHub Actions
-jobs; provision and
-verify production Upstash; exercise real Expo/EAS devices; provide admin E2E credentials;
+jobs; verify production rate limiting; exercise real Expo/EAS devices; provide admin E2E credentials;
 test real Supabase Auth email/redirect/private Storage; and perform backup/restore plus
 production deployment. Optional monitoring may follow. These gates do not invalidate the
 completed Phase 7 repository implementation, but they prevent claiming the product is
 fully deployed or production-ready.
+## PostgreSQL rate limiting follow-up
+
+Replace Redis with an atomic PostgreSQL rate-limit bucket table accessed through Prisma.
+Use hashed identifiers, server-side timestamps, bounded expiry cleanup, and fail-closed
+authentication. Add a migration that denies direct Supabase client access, test concurrent
+updates against an isolated PostgreSQL database, and apply the migration before deploying
+the new application. No existing application data is changed.

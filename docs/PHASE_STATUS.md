@@ -1,5 +1,17 @@
 # AnatoLearn Phase Status
 
+## PostgreSQL rate limiter follow-up (2026-11-09)
+
+- Replaced the production Redis adapter with atomic PostgreSQL bucket updates using
+  hashed keys, expiring windows, bounded cleanup, and fail-closed errors. Development
+  and test keep the bounded in-memory adapter.
+- Applied `20261109150000_add_rate_limit_buckets` to the confirmed Supabase database.
+  A rollback-only test verified increment, denial, reset, RLS, and denied direct client
+  privileges. An isolated concurrency test requires a dedicated test database.
+- Lint, typecheck, build, OpenAPI validation, and the full suite passed (736 tests;
+  17 skipped, including the opt-in PostgreSQL tests). The rollback test passed separately.
+- The production code rollout and authenticated login verification remain pending.
+
 ## Production Sharp packaging investigation (2026-11-09)
 
 - Production logs show missing `libvips-cpp.so.8.18.3` when loading Sharp,
@@ -18,9 +30,8 @@ Date: 2026-08-19
 
 Phases 0-7 are implemented and all sixteen migrations are current in the configured
 development database. The product is not claimed as fully deployed or production-ready.
-`npm run env:check` passes locally. The production Vercel project now has a free Upstash
-resource; the adapter accepts its standard `KV_REST_API_*` credentials as well as the
-self-managed `UPSTASH_REDIS_REST_*` pair. Provider, authenticated E2E, backup/restore,
+`npm run env:check` passes locally. The PostgreSQL limiter migration is applied; application
+rollout remains pending. Provider, authenticated E2E, backup/restore,
 cron, and production deployment acceptance remain external gates.
 
 ## Admin topic selection scalability fix (2026-08-19)
@@ -449,7 +460,7 @@ and one existing intentional skip; do not imply authenticated flows passed.
 
 1. Install a valid random 32+ character deployment `CRON_SECRET`, configure the Vercel
    daily cron and GitHub Actions scheduler secrets, and verify both workers.
-2. Provision and verify paired Upstash production credentials.
+2. Apply and verify the production PostgreSQL rate-limit migration.
 3. Configure a real Expo access token and exercise EAS devices through ticket, receipt,
    partial, and `DeviceNotRegistered` outcomes. The at-least-once crash window remains.
 4. Supply admin E2E credentials and run all authenticated desktop/mobile flows.

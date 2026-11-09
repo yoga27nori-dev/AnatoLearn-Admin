@@ -53,9 +53,8 @@ untrusted. The Next.js server is the authorization boundary.
 - Unique, foreign-key, not-found, state, and media failures map to explicit safe
   statuses. Inaccessible published content returns `404` rather than exposing draft or
   parent lifecycle state.
-- Rate limits use an adapter: atomic Upstash Redis REST counters when the credential pair
-  is configured and a bounded process-local fallback only in development/test.
-  Production requires Upstash and fails closed when it is missing/unavailable. Login,
+- Rate limits use atomic PostgreSQL counters in production and a bounded process-local
+  fallback only in development/test. Production fails closed if the database is unavailable. Login,
   registration, and forgot-password use separate SHA-256-derived client/account keys;
   reset/change-password, feedback, and device-token limits use server-derived identifiers.
   A `429` response includes integer-seconds `Retry-After`.
@@ -378,9 +377,7 @@ Relevant required names include:
   for scheduled expiry and notification processing)
 - `EXPO_PUSH_ENABLED`, `EXPO_ACCESS_TOKEN` (server-only provider configuration; optional
   to boot and isolated from shared runtime)
-- `KV_REST_API_URL`, `KV_REST_API_TOKEN` (preferred Vercel Upstash integration pair), or
-  `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (self-managed pair); one complete
-  pair is required when `NODE_ENV=production`
+- Rate limiting uses the existing `DATABASE_URL`; apply the bucket migration before deployment.
 
 Environment validation does not print secret values. `envCheckSchema` intentionally
 combines shared, bootstrap, and cron schemas, so `npm run env:check` rejects a configured
@@ -405,8 +402,7 @@ concern, not a Phase 3 code completion gate.
    and the documented provider-acceptance crash window is at-least-once.
 5. Playwright passed 17 public/security/accessibility cases and skipped 14. Authenticated
    admin flows did not run because their two E2E credentials were absent.
-6. A production Vercel Upstash resource is provisioned. Deployed limiter behavior remains
-   to be verified after the compatible application revision is promoted. The RLS/revoke
+6. PostgreSQL limiter migration and deployed behavior remain to be verified. The RLS/revoke
    migrations are proven in development and an isolated database, not production.
 7. Backup/restore, production deployment, real Supabase Auth email/redirect/private
    Storage, and optional monitoring remain unverified.

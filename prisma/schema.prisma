@@ -13,6 +13,14 @@ enum UserRole {
   USER
 }
 
+model RateLimitBucket {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime @db.Timestamptz(3)
+
+  @@index([expiresAt])
+}
+
 enum PublishStatus {
   DRAFT
   PUBLISHED

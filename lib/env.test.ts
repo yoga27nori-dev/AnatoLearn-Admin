@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bootstrapEnvSchema, cronEnvSchema, envCheckSchema, getAuthRedirectUrls, notificationProviderEnvSchema, publicEnvSchema, rateLimitEnvSchema, serverEnvSchema } from "@/lib/env";
+import { bootstrapEnvSchema, cronEnvSchema, envCheckSchema, getAuthRedirectUrls, notificationProviderEnvSchema, publicEnvSchema, serverEnvSchema } from "@/lib/env";
 
 describe("publicEnvSchema", () => {
   it("accepts the documented public application settings", () => {
@@ -124,54 +124,19 @@ describe("publicEnvSchema", () => {
     expect(notificationProviderEnvSchema.parse({ EXPO_PUSH_ENABLED: "true", EXPO_ACCESS_TOKEN: "token" })).toEqual({ EXPO_PUSH_ENABLED: "true", EXPO_ACCESS_TOKEN: "token" });
   });
 
-  it("requires a complete distributed limiter configuration in production", () => {
-    expect(rateLimitEnvSchema.safeParse({ NODE_ENV: "development" }).success).toBe(true);
-    expect(rateLimitEnvSchema.safeParse({ NODE_ENV: "test" }).success).toBe(true);
-    expect(rateLimitEnvSchema.safeParse({ NODE_ENV: "production" }).success).toBe(false);
-    expect(rateLimitEnvSchema.safeParse({ NODE_ENV: "development", UPSTASH_REDIS_REST_URL: "https://redis.example" }).success).toBe(false);
-    expect(rateLimitEnvSchema.safeParse({
-      NODE_ENV: "production",
-      UPSTASH_REDIS_REST_URL: "https://redis.example",
-      UPSTASH_REDIS_REST_TOKEN: "secret-token",
-    }).success).toBe(true);
-    expect(rateLimitEnvSchema.safeParse({
-      NODE_ENV: "production",
-      KV_REST_API_URL: "https://redis.example",
-      KV_REST_API_TOKEN: "secret-token",
-    }).success).toBe(true);
-    expect(rateLimitEnvSchema.safeParse({
-      NODE_ENV: "production",
-      KV_REST_API_URL: "https://redis.example",
-    }).success).toBe(false);
-  });
-
-  it("makes production env-check fail when Upstash is absent", () => {
-    const base = {
-      NODE_ENV: "production",
-      NEXT_PUBLIC_APP_URL: "https://app.example",
+  it("accepts production configuration without Redis variables", () => {
+    expect(envCheckSchema.safeParse({
+      NODE_ENV: "production", NEXT_PUBLIC_APP_URL: "https://app.example",
       DATABASE_URL: "postgresql://user:password@localhost:6543/postgres",
       DIRECT_URL: "postgresql://user:password@localhost:5432/postgres",
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable",
-      SUPABASE_SECRET_KEY: "sb_secret_example",
-      SUPABASE_STORAGE_ALLOWED_MIME_TYPES: "image/png",
-      SUPABASE_STORAGE_VISIBILITY: "private",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "publishable", SUPABASE_SECRET_KEY: "secret",
+      SUPABASE_STORAGE_ALLOWED_MIME_TYPES: "image/png", SUPABASE_STORAGE_VISIBILITY: "private",
       ADMIN_BOOTSTRAP_EMAIL: "admin@example.com",
-      CRON_SECRET: "x".repeat(32),
-      EXPO_PUSH_ENABLED: "false",
-    };
-    expect(envCheckSchema.safeParse(base).success).toBe(false);
-    expect(envCheckSchema.safeParse({
-      ...base,
-      UPSTASH_REDIS_REST_URL: "https://redis.example",
-      UPSTASH_REDIS_REST_TOKEN: "secret-token",
-    }).success).toBe(true);
-    expect(envCheckSchema.safeParse({
-      ...base,
-      KV_REST_API_URL: "https://redis.example",
-      KV_REST_API_TOKEN: "secret-token",
     }).success).toBe(true);
   });
+
+
 });
 
 describe("getAuthRedirectUrls", () => {

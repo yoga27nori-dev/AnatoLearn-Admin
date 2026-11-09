@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 const optionalUrl = z.preprocess((value) => (value === "" ? undefined : value), z.url().optional());
-const optionalString = z.preprocess((value) => (value === "" ? undefined : value), z.string().min(1).optional());
 const knownCronPlaceholders = /^(change[_ -]?me|your[_ -]?cron|replace[_ -]?me|example)/i;
 const optionalSecret = z.preprocess(
   (value) => (value === "" ? undefined : value),
@@ -38,29 +37,6 @@ export const notificationProviderEnvSchema = z.object({
   EXPO_ACCESS_TOKEN: z.preprocess((value) => value === "" ? undefined : value, z.string().min(1).optional()),
 });
 
-export const rateLimitEnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  UPSTASH_REDIS_REST_URL: optionalUrl,
-  UPSTASH_REDIS_REST_TOKEN: optionalString,
-  KV_REST_API_URL: optionalUrl,
-  KV_REST_API_TOKEN: optionalString,
-}).superRefine((value, context) => {
-  const pairs = [
-    ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN", value.UPSTASH_REDIS_REST_URL, value.UPSTASH_REDIS_REST_TOKEN],
-    ["KV_REST_API_URL", "KV_REST_API_TOKEN", value.KV_REST_API_URL, value.KV_REST_API_TOKEN],
-  ] as const;
-  for (const [urlKey, tokenKey, url, token] of pairs) {
-    if (Boolean(url) !== Boolean(token)) {
-      context.addIssue({ code: "custom", path: [url ? tokenKey : urlKey], message: "Both distributed rate-limit variables must be configured together." });
-    }
-  }
-  const hasCustomPair = Boolean(value.UPSTASH_REDIS_REST_URL && value.UPSTASH_REDIS_REST_TOKEN);
-  const hasVercelPair = Boolean(value.KV_REST_API_URL && value.KV_REST_API_TOKEN);
-  if (value.NODE_ENV === "production" && !hasCustomPair && !hasVercelPair) {
-    context.addIssue({ code: "custom", path: ["KV_REST_API_URL"], message: "Distributed rate limiting is required in production." });
-  }
-});
-
 export const bootstrapEnvSchema = serverEnvSchema.extend({
   ADMIN_BOOTSTRAP_EMAIL: z.email(),
   ADMIN_BOOTSTRAP_PASSWORD: z.preprocess(
@@ -71,8 +47,7 @@ export const bootstrapEnvSchema = serverEnvSchema.extend({
 
 export const envCheckSchema = bootstrapEnvSchema
   .and(cronEnvSchema)
-  .and(notificationProviderEnvSchema)
-  .and(rateLimitEnvSchema);
+  .and(notificationProviderEnvSchema);
 
 export function getPublicEnv() {
   return publicEnvSchema.parse(process.env);
